@@ -142,3 +142,152 @@ try:
     )
 except ImportError:
     logger.info("Using default Docker config...")
+
+# ---------------------------------------------------
+# Embedding Configuration
+# ---------------------------------------------------
+
+# Feature Flags
+# Merging with existing flags instead of overwriting
+FEATURE_FLAGS.update({
+    "EMBEDDED_SUPERSET": True
+})
+
+# CORS Enabling
+ENABLE_CORS = True
+CORS_OPTIONS = {
+    "supports_credentials": True,
+    "allow_headers": "*",
+    "expose_headers": "*",
+    "resources": "*",
+    "origins": ["http://localhost:4200", "http://localhost:3000"]  # 4200 for angular, 3000 for react
+}
+
+# Dashboard embedding
+GUEST_ROLE_NAME = "Gamma"
+GUEST_TOKEN_JWT_SECRET = "fnklSuYC060W56sSsAfD7Hu/BV64PmdOZdPSRVD+xFYiFwT9HoxLCqzF"
+GUEST_TOKEN_JWT_ALGO = "HS256"
+GUEST_TOKEN_HEADER_NAME = "X-GuestToken"
+GUEST_TOKEN_JWT_EXP_SECONDS = 300  # 5 minutes
+
+# ---------------------------------------------------
+# Branding & Customization
+# ---------------------------------------------------
+APP_NAME = "FPS Analytics"
+APP_ICON = "/static/assets/images/fps_analytics/logo.png"
+LOGO_TARGET_PATH = '/'
+LOGO_TOOLTIP = "FPS Analytics"
+LOGO_RIGHT_TEXT = "Analytics"
+
+FAVICONS = [{"href": "/static/assets/images/fps_analytics/favicon/favicon.png"}]
+
+THEME_OVERRIDES = {
+    "colors": {
+        "primary": {
+            "base": '#101F5B',
+        },
+        "secondary": {
+            "base": '#FF6E13',
+        },
+        "success": {
+            "base": '#2E7D32',
+        },
+        "warning": {
+            "base": '#F9A825',
+        },
+        "error": {
+            "base": '#C62828',
+        },
+        "grayscale": {
+            "light5": '#FFFFFF',
+        }
+    },
+    "typography": {
+        "families": {
+            "sansSerif": 'Inter, "Helvetica Neue", Arial, sans-serif',
+            "monospace": '"Source Code Pro", Menlo, Monaco, Consolas, "Courier New", monospace',
+        }
+    }
+}
+
+# ---------------------------------------------------
+# CSP Configuration (Fixing WebSocket Errors)
+# ---------------------------------------------------
+TALISMAN_CONFIG = {
+    "content_security_policy": {
+        "base-uri": ["'self'"],
+        "default-src": ["'self'"],
+        "img-src": ["'self'", "blob:", "data:", "http://localhost:9000", "http://localhost:8088"],
+        "worker-src": ["'self'", "blob:"],
+        "connect-src": [
+            "'self'",
+            "http://localhost:9000",
+            "ws://localhost:9000",
+            "https://api.mapbox.com",
+            "https://events.mapbox.com",
+        ],
+        "object-src": ["'none'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    },
+    "force_https": False,
+    "force_file_save": False,
+}
+
+TALISMAN_ENABLED = True
+
+# Disable CSP to fix WebSocket connection in Dev Mode
+TALISMAN_ENABLED = False
+
+# ---------------------------------------------------
+# Custom Color Palettes
+# ---------------------------------------------------
+EXTRA_CATEGORICAL_COLOR_SCHEMES = [
+    {
+        "id": "fps_primary_01_colors",
+        "description": "",
+        "label": "FPS Primary 01 Color palette",
+        "colors": [
+            "#dcedff",
+            "#b1c0f5",
+            "#6a7fc0",
+            "#14a5ff",
+            "#1457ff",
+            "#013099",
+            "#14167b",
+            "#101f5b",
+            "#011033",
+            "#000919"
+        ]
+    },
+    {
+        "id": "fps_primary_02_colors",
+        "description": "",
+        "label": "FPS Primary 02 Color palette",
+        "colors": [
+            "#ffffff",
+            "#e6e6e6",
+            "#b8bfcc",
+            "#828a99",
+            "#6d7480",
+            "#575d66",
+            "#4e5259",
+            "#43464d",
+            "#373a40",
+            "#2c2e33",
+            "#212326",
+            "#16171a"
+        ]
+    },
+    {
+        "id": "fps_secondary_colors",
+        "description": "",
+        "label": "FPS Secondary Color palette",
+        "colors": [
+            "#ff7c2b",
+            "#ff6e13",
+            "#e36111",
+            "#a1450c"
+        ]
+    }
+]

@@ -653,7 +653,7 @@ if (isDevMode) {
       webSocketURL: {
         hostname: '0.0.0.0',
         pathname: '/ws',
-        port: 0,
+        port: 9000,
       },
     },
     static: {

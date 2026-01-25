@@ -48,6 +48,64 @@ if (process.env.WEBPACK_MODE === 'development') {
 // Grab initial bootstrap data
 const bootstrapData = getBootstrapData();
 
+// FORCE THEME OVERRIDES DEEP INJECTION
+bootstrapData.common = bootstrapData.common || {};
+const themeConfig = {
+  brandAppName: 'FPS Analytics',
+  brandLogoUrl: '/static/assets/images/fps_analytics/logo.png',
+  brandLogoAlt: 'FPS Analytics',
+  brandLogoHeight: '50px',
+  colorPrimary: '#101F5B',
+  colorLink: '#101F5B',
+  colorSuccess: '#2E7D32',
+  colorWarning: '#F9A825',
+  colorError: '#C62828',
+  fontFamily: 'Inter, "Helvetica Neue", Arial, sans-serif',
+  fontFamilyCode:
+    '"Source Code Pro", Menlo, Monaco, Consolas, "Courier New", monospace',
+};
+
+// Apply to Default Theme
+if (bootstrapData.common.theme?.default) {
+  const defaultTheme = bootstrapData.common.theme.default as any;
+  if (defaultTheme.token) {
+    Object.assign(defaultTheme.token, themeConfig);
+  }
+}
+// Apply to Dark Theme
+if (bootstrapData.common.theme?.dark) {
+  const darkTheme = bootstrapData.common.theme.dark as any;
+  if (darkTheme.token) {
+    Object.assign(darkTheme.token, themeConfig);
+  }
+}
+
+// Ensure menu data also points to correct logo
+if (bootstrapData.common.menu_data?.brand) {
+  bootstrapData.common.menu_data.brand.icon =
+    '/static/assets/images/fps_analytics/logo.png';
+  bootstrapData.common.menu_data.brand.alt = 'FPS Analytics';
+}
+
+// Fallback legacy overrides
+(bootstrapData.common as any).theme_overrides = {
+  colors: {
+    primary: { base: '#101F5B' },
+    secondary: { base: '#FF6E13' },
+    success: { base: '#2E7D32' },
+    warning: { base: '#F9A825' },
+    error: { base: '#C62828' },
+    grayscale: { light5: '#FFFFFF' },
+  },
+  typography: {
+    families: {
+      sansSerif: 'Inter, "Helvetica Neue", Arial, sans-serif',
+      monospace:
+        '"Source Code Pro", Menlo, Monaco, Consolas, "Courier New", monospace',
+    },
+  },
+};
+
 setupFormatters(
   bootstrapData.common.d3_format,
   bootstrapData.common.d3_time_format,
