@@ -37,7 +37,6 @@ import type { ComposeOption } from 'echarts/core';
 import type { HeatmapSeriesOption } from 'echarts/charts';
 import type { CallbackDataParams } from 'echarts/types/src/util/types';
 import { HeatmapChartProps, HeatmapTransformedProps } from './types';
-import { getDefaultTooltip } from '../utils/tooltip';
 import { Refs } from '../types';
 import { parseAxisBound } from '../utils/controls';
 import { getPercentFormatter } from '../utils/formatters';
@@ -345,7 +344,8 @@ export default function transformProps(
     },
     series,
     tooltip: {
-      ...getDefaultTooltip(refs),
+      trigger: 'item',
+      className: 'echarts-tooltip',
       appendToBody: false,
       confine: true,
       formatter: (params: CallbackDataParams) => {
