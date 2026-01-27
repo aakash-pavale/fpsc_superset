@@ -37,7 +37,7 @@ import type { ComposeOption } from 'echarts/core';
 import type { HeatmapSeriesOption } from 'echarts/charts';
 import type { CallbackDataParams } from 'echarts/types/src/util/types';
 import { HeatmapChartProps, HeatmapTransformedProps } from './types';
-import { Refs } from '../types';
+
 import { parseAxisBound } from '../utils/controls';
 import { getPercentFormatter } from '../utils/formatters';
 
@@ -168,7 +168,6 @@ const calculateTotals = memoizeOne(
 export default function transformProps(
   chartProps: HeatmapChartProps,
 ): HeatmapTransformedProps {
-  const refs: Refs = {};
   const { width, height, formData, queriesData, datasource, theme } =
     chartProps;
   const {
@@ -345,9 +344,9 @@ export default function transformProps(
     series,
     tooltip: {
       trigger: 'item',
-      className: 'echarts-tooltip',
-      appendToBody: false,
+      appendToBody: true,
       confine: true,
+      transitionDuration: 0,
       formatter: (params: CallbackDataParams) => {
         const paramsValue = params.value as (string | number)[];
         if (!paramsValue) {
@@ -427,7 +426,7 @@ export default function transformProps(
     },
   };
   return {
-    refs,
+    refs: {},
     echartOptions,
     width,
     height,
