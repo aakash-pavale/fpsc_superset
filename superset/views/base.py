@@ -608,8 +608,9 @@ def get_spa_template_context(
         # Use custom SVG from theme
         spinner_svg = theme_tokens["brandSpinnerSvg"]
     elif not theme_tokens.get("brandSpinnerUrl"):
-        # No custom URL either, use default SVG
-        spinner_svg = get_default_spinner_svg()
+        # No custom URL either, use default GIF
+        theme_tokens["brandSpinnerUrl"] = "/static/assets/images/loading.gif"
+        spinner_svg = None
 
     # Determine default title using the (potentially updated) brandAppName
     default_title = theme_tokens.get("brandAppName", "Superset")

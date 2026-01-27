@@ -16,6 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import LoadingSvg from './loading.svg';
+import LoadingGif from './loading.gif';
 
-export { LoadingSvg as Loading };
+export { LoadingGif as Loading };

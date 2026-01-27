@@ -88,7 +88,12 @@ export function Loading({
     if (theme.brandSpinnerUrl) {
       return <img src={theme.brandSpinnerUrl} alt="Loading..." />;
     }
-    // Default: use the imported SVG component
+    // Default: use the imported loader
+    // If imported loader is a string (GIF/PNG path), render as img
+    if (typeof LoaderSvg === 'string') {
+      return <img src={LoaderSvg} alt="Loading..." />;
+    }
+    // Otherwise render as component (SVG)
     return <LoaderSvg />;
   };
 
