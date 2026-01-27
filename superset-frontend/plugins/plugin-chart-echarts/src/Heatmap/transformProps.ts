@@ -346,14 +346,21 @@ export default function transformProps(
     series,
     tooltip: {
       ...getDefaultTooltip(refs),
+      appendToBody: false,
+      confine: true,
       formatter: (params: CallbackDataParams) => {
+        const paramsValue = params.value as (string | number)[];
+        if (!paramsValue) {
+          return '';
+        }
+
         const totals = calculateTotals(
           data,
           xAxisLabel,
           yAxisLabel,
           metricLabel,
         );
-        const paramsValue = params.value as (string | number)[];
+
         const x = paramsValue?.[0];
         const y = paramsValue?.[1];
         const value = paramsValue?.[2] as number | null | undefined;
@@ -391,7 +398,7 @@ export default function transformProps(
       right: 0,
       top: 0,
       itemHeight:
-        legendType === 'continuous' ? Math.min(300, width * 0.5) : 14,
+        legendType === 'continuous' ? Math.min(300, (width || 500) * 0.5) : 14,
       itemWidth: 15,
       formatter: (min: number) => valueFormatter(min),
       inRange: {
