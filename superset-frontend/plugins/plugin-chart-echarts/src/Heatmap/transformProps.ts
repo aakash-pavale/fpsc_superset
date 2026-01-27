@@ -344,7 +344,7 @@ export default function transformProps(
     series,
     tooltip: {
       trigger: 'item',
-      appendToBody: true,
+      appendToBody: false,
       confine: true,
       transitionDuration: 0,
       formatter: (params: CallbackDataParams) => {
