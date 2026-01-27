@@ -340,6 +340,8 @@ export default function transformProps(
       containLabel: true,
       bottom: bottomMargin,
       left: leftMargin,
+      right: '5%',
+      top: showLegend ? 40 : 20,
     },
     series,
     tooltip: {
@@ -388,7 +390,8 @@ export default function transformProps(
       orient: 'horizontal',
       right: 0,
       top: 0,
-      itemHeight: legendType === 'continuous' ? 300 : 14,
+      itemHeight:
+        legendType === 'continuous' ? Math.min(300, width * 0.5) : 14,
       itemWidth: 15,
       formatter: (min: number) => valueFormatter(min),
       inRange: {
