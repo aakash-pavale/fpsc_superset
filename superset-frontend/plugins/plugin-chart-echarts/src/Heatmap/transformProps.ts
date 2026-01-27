@@ -304,7 +304,12 @@ export default function transformProps(
           );
           return [];
         }
-        return [[xIndex, yIndex, metricValue] as [number, number, any]];
+
+        const item = [xIndex, yIndex, metricValue];
+        if (normalized) {
+          item.push(row['rank']);
+        }
+        return [item as [number, number, any]];
       }),
       label: {
         show: showValues,
