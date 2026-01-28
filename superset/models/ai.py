@@ -73,7 +73,7 @@ class AIChatLog(Model):
         return ""
 
     @user_name.expression
-    def user_name_expression(cls) -> Any:
+    def user_name(cls) -> Any:  # type: ignore
         # Concatenate first_name and last_name with a space
         return select([
             security_manager.user_model.first_name + " " + security_manager.user_model.last_name
@@ -86,7 +86,7 @@ class AIChatLog(Model):
         return self.dashboard.dashboard_title if self.dashboard else ""
 
     @dashboard_title.expression
-    def dashboard_title_expression(cls) -> Any:
+    def dashboard_title(cls) -> Any:  # type: ignore
         from superset.models.dashboard import Dashboard
         return select([Dashboard.dashboard_title]).where(
             Dashboard.id == cls.dashboard_id
