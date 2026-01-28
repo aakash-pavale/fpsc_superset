@@ -164,6 +164,21 @@ const Register = lazy(
 const GroupsList: LazyExoticComponent<any> = lazy(
   () => import(/* webpackChunkName: "GroupsList" */ 'src/pages/GroupsList'),
 );
+
+const AIProviderList: LazyExoticComponent<any> = lazy(
+  () =>
+    import(
+      /* webpackChunkName: "AIProviderList" */ 'src/views/CRUD/ai/AIProviderList'
+    ),
+);
+
+const AIChatLogList: LazyExoticComponent<any> = lazy(
+  () =>
+    import(
+      /* webpackChunkName: "AIChatLogList" */ 'src/views/CRUD/ai/AIChatLogList'
+    ),
+);
+
 const UserRegistrations = lazy(
   () =>
     import(
@@ -333,6 +348,14 @@ if (isAdmin) {
     {
       path: '/list_groups/',
       Component: GroupsList,
+    },
+    {
+      path: '/ai_provider/list/',
+      Component: AIProviderList,
+    },
+    {
+      path: '/ai_chat/list/',
+      Component: AIChatLogList,
     },
   );
 

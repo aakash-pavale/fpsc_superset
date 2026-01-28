@@ -162,7 +162,7 @@ const discardChanges = () => {
   window.location.assign(url);
 };
 
-const Header = () => {
+const Header = ({ onToggleAI }) => {
   const dispatch = useDispatch();
   const [didNotifyMaxUndoHistoryToast, setDidNotifyMaxUndoHistoryToast] =
     useState(false);

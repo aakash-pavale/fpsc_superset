@@ -187,7 +187,9 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         from superset.sqllab.permalink.api import SqlLabPermalinkRestApi
         from superset.tags.api import TagRestApi
         from superset.themes.api import ThemeRestApi
+        from superset.views.ai_api import AIChatRestApi, AIProviderRestApi
         from superset.views.alerts import AlertView, ReportView
+        from superset.views.ai import AIChatLogListView, AIProviderListView
         from superset.views.all_entities import TaggedObjectsModelView
         from superset.views.annotations import AnnotationLayerView
         from superset.views.api import Api
@@ -235,6 +237,8 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         #
         # Setup API views
         #
+        appbuilder.add_api(AIChatRestApi)
+        appbuilder.add_api(AIProviderRestApi)
         appbuilder.add_api(AnnotationRestApi)
         appbuilder.add_api(AnnotationLayerRestApi)
         appbuilder.add_api(AsyncEventsRestApi)
@@ -481,6 +485,22 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
                 self.config["FAB_ADD_SECURITY_VIEWS"]
                 and self.config["SUPERSET_LOG_VIEW"]
             ),
+        )
+        appbuilder.add_view(
+            AIProviderListView,
+            "AI Provider Configuration",
+            label=_("AI Provider Configuration"),
+            category="Security",
+            category_label=_("Security"),
+            icon="fa-cogs",
+        )
+        appbuilder.add_view(
+            AIChatLogListView,
+            "AI Chat Log",
+            label=_("AI Chat Log"),
+            category="Security",
+            category_label=_("Security"),
+            icon="fa-list-alt",
         )
         appbuilder.add_api(SecurityRestApi)
         #

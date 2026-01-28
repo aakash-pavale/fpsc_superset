@@ -19,6 +19,7 @@
 /* eslint-env browser */
 import cx from 'classnames';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import CollapsedRightRail from './CollapsedRightRail';
 import { t } from '@apache-superset/core';
 import { addAlpha, JsonObject, useElementOnScreen } from '@superset-ui/core';
 import { css, styled, useTheme } from '@apache-superset/core/ui';
@@ -58,6 +59,8 @@ import {
 import FilterBar from 'src/dashboard/components/nativeFilters/FilterBar';
 import { useUiConfig } from 'src/components/UiConfigContext';
 import ResizableSidebar from 'src/components/ResizableSidebar';
+import RightResizableSidebar from 'src/components/RightResizableSidebar';
+import AIChatPanel from 'src/dashboard/components/AIChat';
 import {
   BUILDER_SIDEPANEL_WIDTH,
   CLOSED_FILTER_BAR_WIDTH,
@@ -89,15 +92,40 @@ const StickyPanel = styled.div<{ width: number }>`
   flex: 0 0 ${({ width }) => width}px;
 `;
 
+// Spacer reserves space in the Grid
+const RightPanelSpacer = styled.div<{ width: number }>`
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  width: ${({ width }) => width}px;
+  flex: 0 0 ${({ width }) => width}px;
+  /* Ensure it doesn't collapse */
+  min-height: 100vh;
+`;
+
+// Fixed Panel floats on top of the spacer, locked to viewport
+const RightPanelFixed = styled.div<{ width: number; topOffset: number }>`
+  position: fixed;
+  top: ${({ topOffset }) => topOffset}px;
+  right: 0;
+  bottom: 0;
+  width: ${({ width }) => width}px;
+  z-index: 101;
+  background-color: ${({ theme }) => theme.colorBgContainer};
+  box-shadow: -2px 0 8px 0 rgba(0, 0, 0, 0.1);
+  border-left: 1px solid ${({ theme }) => theme.colorSplit}; /* Visual separation from dashboard */
+  transition: width 0.2s ease-out;
+`;
+
 // @z-index-above-dashboard-popovers (99) + 1 = 100
 const StyledHeader = styled.div<{ filterBarWidth: number }>`
   ${({ theme, filterBarWidth }) => css`
-    grid-column: 2;
+    grid-column: 2 / -1;
     grid-row: 1;
     position: sticky;
     top: 0;
     z-index: 99;
-    max-width: calc(100vw - ${filterBarWidth}px);
+    width: 100%;
+    max-width: 100%; /* Resizes with Grid (Col 2 + Col 3) */
 
     .empty-droptarget:before {
       position: absolute;
@@ -113,7 +141,6 @@ const StyledHeader = styled.div<{ filterBarWidth: number }>`
     }
   `}
 `;
-
 const StyledContent = styled.div<{
   fullSizeChartId: number | null;
 }>`
@@ -273,8 +300,9 @@ const DashboardContentWrapper = styled.div`
 const StyledDashboardContent = styled.div<{
   editMode: boolean;
   marginLeft: number;
+  marginRight: number;
 }>`
-  ${({ theme, editMode, marginLeft }) => css`
+  ${({ theme, editMode, marginLeft, marginRight }) => css`
     background-color: ${theme.colorBgLayout};
     display: flex;
     flex-direction: row;
@@ -294,6 +322,7 @@ const StyledDashboardContent = styled.div<{
       position: relative;
       margin: ${theme.sizeUnit * 4}px;
       margin-left: ${marginLeft}px;
+      margin-right: ${marginRight}px;
 
       ${editMode &&
       `
@@ -366,7 +395,7 @@ const DashboardBuilder = () => {
   const theme = useTheme();
 
   const dashboardId = useSelector<RootState, string>(
-    ({ dashboardInfo }) => `${dashboardInfo.id}`,
+    ({ dashboardInfo }) => `${dashboardInfo.id} `,
   );
   const dashboardLayout = useSelector<RootState, DashboardLayout>(
     state => state.dashboardLayout.present,
@@ -428,6 +457,9 @@ const DashboardBuilder = () => {
   const [currentFilterBarWidth, setCurrentFilterBarWidth] = useState(
     CLOSED_FILTER_BAR_WIDTH,
   );
+  // AI Panel State
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [currentAIPanelWidth, setCurrentAIPanelWidth] = useState(400);
 
   useEffect(() => {
     setBarTopOffset(headerRef.current?.getBoundingClientRect()?.height || 0);
@@ -560,8 +592,8 @@ const DashboardBuilder = () => {
     ],
   );
 
-  const dashboardContentMarginLeft = !editMode
-    ? theme.sizeUnit * 4
+  const dashboardContentMargin = !editMode
+    ? theme.sizeUnit * 8
     : theme.sizeUnit * 8;
 
   const renderChild = useCallback(
@@ -604,6 +636,16 @@ const DashboardBuilder = () => {
     ],
   );
 
+  const renderAIPanel = useCallback(
+    width => (
+      <AIChatPanel
+        onClose={() => setShowAIPanel(false)}
+        dashboardId={dashboardId}
+      />
+    ),
+    [dashboardId],
+  );
+
   const isVerticalFilterBarVisible =
     showFilterBar && filterBarOrientation === FilterBarOrientation.Vertical;
   const headerFilterBarWidth = isVerticalFilterBarVisible
@@ -614,7 +656,7 @@ const DashboardBuilder = () => {
     <DashboardWrapper>
       {isVerticalFilterBarVisible && (
         <ResizableSidebar
-          id={`dashboard:${dashboardId}`}
+          id={`dashboard:${dashboardId} `}
           enable={dashboardFiltersOpen}
           minWidth={OPEN_FILTER_BAR_WIDTH}
           maxWidth={OPEN_FILTER_BAR_MAX_WIDTH}
@@ -674,28 +716,29 @@ const DashboardBuilder = () => {
           <StyledDashboardContent
             className="dashboard-content"
             editMode={editMode}
-            marginLeft={dashboardContentMarginLeft}
+            marginLeft={dashboardContentMargin}
+            marginRight={dashboardContentMargin}
           >
             {showDashboard ? (
               missingInitialFilters.length > 0 ? (
                 <div
                   css={css`
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    justify-content: center;
-                    flex: 1;
+display: flex;
+flex - direction: row;
+align - items: center;
+justify - content: center;
+flex: 1;
                     & div {
-                      width: 500px;
-                    }
-                  `}
+  width: 500px;
+}
+`}
                 >
                   <BasicErrorAlert
                     title={t('Unable to load dashboard')}
                     body={t(
                       `The following filters have the 'Select first filter value by default'
                     option checked and could not be loaded, which is preventing the dashboard
-                    from rendering: %s`,
+                    from rendering: % s`,
                       missingInitialFilters.join(', '),
                     )}
                   />
@@ -710,6 +753,70 @@ const DashboardBuilder = () => {
           </StyledDashboardContent>
         </DashboardContentWrapper>
       </StyledContent>
+
+      {/* Right Rail in Grid Column 3 */}
+      <RightPanelSpacer width={32}>
+        <RightPanelFixed
+          width={showAIPanel ? 400 : 32}
+          topOffset={MAIN_HEADER_HEIGHT + 145}
+        >
+          {showAIPanel ? (
+            <RightResizableSidebar
+              id="ai-chat-panel"
+              initialWidth={400}
+              enable={false}
+              minWidth={400}
+              maxWidth={400}
+              topOffset={0}
+              height="100%"
+            >
+              {renderAIPanel}
+            </RightResizableSidebar>
+          ) : (
+            !editMode && (
+              <CollapsedRightRail onClick={() => setShowAIPanel(true)}>
+                <div
+                  css={css`
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    padding-top: ${theme.sizeUnit * 3}px;
+                  `}
+                >
+                  <Icons.VerticalAlignTopOutlined
+                    iconSize="l"
+                    css={css`
+                      color: ${theme.colorPrimary};
+                      margin-bottom: ${theme.sizeUnit * 3}px;
+                      transform: rotate(-90deg);
+                    `}
+                  />
+                  <Icons.CommentOutlined
+                    iconSize="l"
+                    css={css`
+                      color: ${theme.colorTextTertiary};
+                    `}
+                  />
+                  <span
+                    css={css`
+                      writing-mode: vertical-rl;
+                      text-orientation: mixed;
+                      color: ${theme.colorPrimary};
+                      margin-top: ${theme.sizeUnit * 4}px;
+                      font-size: ${theme.typography?.sizes?.s ?? 12}px;
+                      font-weight: ${theme.typography?.weights?.bold ?? 'bold'};
+                      transform: rotate(180deg);
+                    `}
+                  >
+                    {t('AI-Powered Insights')}
+                  </span>
+                </div>
+              </CollapsedRightRail>
+            )
+          )}
+        </RightPanelFixed>
+      </RightPanelSpacer>
+
       {dashboardIsSaving && (
         <Loading
           css={css`
