@@ -6,6 +6,9 @@ import { Icons } from '@superset-ui/core/components/Icons';
 import Markdown from 'markdown-to-jsx';
 import { Loading } from '@superset-ui/core/components';
 
+// @ts-ignore
+const flobiLogo = require('src/assets/images/flobi_logo.png');
+
 const ChatPanelContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -27,6 +30,42 @@ const Header = styled.div`
   font-weight: ${({ theme }) => theme.fontWeightStrong};
   border-bottom: 1px solid ${({ theme }) => theme.colorBorder};
   flex-shrink: 0;
+`;
+
+const TitleSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.sizeUnit}px;
+`;
+
+const BetaLabel = styled.span`
+  font-size: ${({ theme }) => theme.typography?.sizes?.s ?? 12}px;
+  color: ${({ theme }) => theme.colorTextTertiary};
+  font-weight: ${({ theme }) => theme.typography?.weights?.normal ?? 400};
+`;
+
+const RightSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.sizeUnit * 2}px;
+`;
+
+const PoweredByContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+`;
+
+const PoweredByText = styled.span`
+  font-size: 8px;
+  color: ${({ theme }) => theme.colorTextTertiary};
+  margin-bottom: 2px;
+`;
+
+const LogoImage = styled.img`
+  height: 16px;
+  width: auto;
 `;
 
 const CloseButton = styled.button`
@@ -153,7 +192,7 @@ const SendButton = styled.button`
 
   &:hover {
     background-color: ${({ theme, disabled }) =>
-      disabled ? theme.colorBgLayout : theme.colorPrimary};
+    disabled ? theme.colorBgLayout : theme.colorPrimary};
     opacity: ${({ disabled }) => (disabled ? 1 : 0.9)};
   }
 `;
@@ -218,16 +257,25 @@ const AIChatPanel: FC<AIChatPanelProps> = ({ onClose, dashboardId }) => {
   return (
     <ChatPanelContainer>
       <Header>
-        {t('AI Assistant')}
-        <CloseButton onClick={onClose}>
-          <Icons.VerticalAlignTopOutlined
-            iconSize="l"
-            css={css`
-              color: #666;
-              transform: rotate(90deg);
-            `}
-          />
-        </CloseButton>
+        <TitleSection>
+          {t('AI Assistant')}
+          <BetaLabel>{t('(Beta)')}</BetaLabel>
+        </TitleSection>
+        <RightSection>
+          <PoweredByContainer>
+            <PoweredByText>{t('Powered by')}</PoweredByText>
+            <LogoImage src={flobiLogo} alt="FLOBI ANALYTICS" />
+          </PoweredByContainer>
+          <CloseButton onClick={onClose}>
+            <Icons.VerticalAlignTopOutlined
+              iconSize="l"
+              css={css`
+                color: #666;
+                transform: rotate(90deg);
+              `}
+            />
+          </CloseButton>
+        </RightSection>
       </Header>
       <Content ref={contentRef}>
         {messages.map((msg, idx) => (
