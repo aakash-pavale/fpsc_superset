@@ -159,6 +159,7 @@ export interface SubMenuProps {
   color?: string;
   dropDownLinks?: Array<MenuObjectProps>;
   backgroundColor?: string;
+  additionalActions?: ReactNode;
 }
 
 const { SubMenu } = MainNav;
@@ -295,6 +296,11 @@ const SubMenuComponent: FunctionComponent<SubMenuProps> = props => {
               </SubMenu>
             ))}
           </Menu>
+          {props.additionalActions && (
+            <div className="additional-actions" style={{ marginRight: '16px', display: 'flex', alignItems: 'center' }}>
+              {props.additionalActions}
+            </div>
+          )}
           {props.buttons?.map((btn, i) => (
             <Button
               key={i}

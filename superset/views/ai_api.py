@@ -13,6 +13,9 @@ from superset.views.base_api import BaseSupersetModelRestApi, statsd_metrics
 from superset.exceptions import SupersetSecurityException
 
 import logging
+from superset.daos.key_value import KeyValueDAO
+from superset.key_value.types import KeyValueResource, JsonKeyValueCodec
+
 logger = logging.getLogger(__name__)
 
 class AIChatQuerySchema(Schema):
@@ -48,7 +51,7 @@ class AIProviderRestApi(BaseSupersetModelRestApi):
 
 class AIChatRestApi(BaseSupersetModelRestApi):
     datamodel = SQLAInterface(AIChatLog)
-    include_route_methods = {"get_list", "get", "info", "related", "delete", "post", "query"}
+    include_route_methods = {"get_list", "get", "info", "related", "delete", "post", "query", "get_config", "set_config"}
     resource_name = "ai_chat"
     class_permission_name = "AIChat"
     method_permission_name = {
@@ -58,6 +61,8 @@ class AIChatRestApi(BaseSupersetModelRestApi):
         "info": "read",
         "post": "write",
         "delete": "write",
+        "get_config": "read",
+        "set_config": "write",
     }
     allow_browser_login = True
 
@@ -234,3 +239,71 @@ class AIChatRestApi(BaseSupersetModelRestApi):
             "response": response_text,
             "sql_query": response_sql
         })
+
+    @expose("/config", methods=("GET",))
+    @protect()
+    @safe
+    @statsd_metrics
+    def get_config(self) -> Response:
+        """Get AI Assistant Global Configuration
+        ---
+        get:
+          summary: Get AI Assistant Config
+          responses:
+            200:
+              description: Config
+              content:
+                application/json:
+                  schema:
+                   type: object
+                   properties:
+                     enabled:
+                       type: boolean
+        """
+        import uuid
+        AI_CONFIG_UUID = uuid.uuid5(uuid.NAMESPACE_DNS, "ai_assistant_config")
+        config = KeyValueDAO.get_value(
+            resource=KeyValueResource.APP,
+            key=AI_CONFIG_UUID,
+            codec=JsonKeyValueCodec(),
+        )
+        return self.response(200, result=config or {"enabled": True})
+
+    @expose("/config", methods=("POST",))
+    @protect()
+    @safe
+    @statsd_metrics
+    def set_config(self) -> Response:
+        """Set AI Assistant Global Configuration
+        ---
+        post:
+          summary: Set AI Assistant Config
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+          responses:
+            200:
+              description: Config Updated
+        """
+        if not request.is_json:
+             return self.response_400(message="Request is not JSON")
+        
+        data = request.json
+        data = request.json
+
+        import uuid
+        AI_CONFIG_UUID = uuid.uuid5(uuid.NAMESPACE_DNS, "ai_assistant_config")
+        KeyValueDAO.upsert_entry(
+            resource=KeyValueResource.APP,
+            key=AI_CONFIG_UUID,
+            value=data,
+            codec=JsonKeyValueCodec(),
+        )
+        db.session.commit()
+        return self.response(200, result=data)

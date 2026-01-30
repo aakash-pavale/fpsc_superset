@@ -21,7 +21,7 @@ import cx from 'classnames';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import CollapsedRightRail from './CollapsedRightRail';
 import { t } from '@apache-superset/core';
-import { addAlpha, JsonObject, useElementOnScreen } from '@superset-ui/core';
+import { addAlpha, JsonObject, useElementOnScreen, SupersetClient } from '@superset-ui/core';
 import { css, styled, useTheme } from '@apache-superset/core/ui';
 import { useDispatch, useSelector } from 'react-redux';
 import { EmptyState, Loading } from '@superset-ui/core/components';
@@ -164,7 +164,7 @@ const DashboardContentWrapper = styled.div`
         box-shadow: 0 ${theme.sizeUnit}px ${theme.sizeUnit}px 0
           ${addAlpha(theme.colorBorderSecondary, 0.1)};
         padding-left: ${theme.sizeUnit *
-        2}px; /* note this is added to tab-level padding, to match header */
+    2}px; /* note this is added to tab-level padding, to match header */
       }
 
       .dropdown-toggle.btn.btn-primary .caret {
@@ -325,10 +325,9 @@ const StyledDashboardContent = styled.div<{
       margin-right: ${marginRight}px;
 
       ${editMode &&
-      `
-      max-width: calc(100% - ${
-        BUILDER_SIDEPANEL_WIDTH + theme.sizeUnit * 16
-      }px);
+    `
+      max-width: calc(100% - ${BUILDER_SIDEPANEL_WIDTH + theme.sizeUnit * 16
+    }px);
     `}
 
       /* this is the ParentSize wrapper */
@@ -460,6 +459,17 @@ const DashboardBuilder = () => {
   // AI Panel State
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [currentAIPanelWidth, setCurrentAIPanelWidth] = useState(400);
+  const [aiEnabled, setAiEnabled] = useState(true);
+
+  useEffect(() => {
+    SupersetClient.get({ endpoint: '/api/v1/ai_chat/config' })
+      .then(({ json }) => {
+        setAiEnabled(json.result.enabled ?? true);
+      })
+      .catch(() => {
+        setAiEnabled(true);
+      });
+  }, []);
 
   useEffect(() => {
     setBarTopOffset(headerRef.current?.getBoundingClientRect()?.height || 0);
@@ -505,9 +515,9 @@ const DashboardBuilder = () => {
     () => ({
       marginLeft:
         dashboardFiltersOpen ||
-        editMode ||
-        !nativeFiltersEnabled ||
-        filterBarOrientation === FilterBarOrientation.Horizontal
+          editMode ||
+          !nativeFiltersEnabled ||
+          filterBarOrientation === FilterBarOrientation.Horizontal
           ? 0
           : -32,
     }),
@@ -755,50 +765,51 @@ flex: 1;
       </StyledContent>
 
       {/* Right Rail in Grid Column 3 */}
-      <RightPanelSpacer width={32}>
-        <RightPanelFixed
-          width={showAIPanel ? 400 : 32}
-          topOffset={MAIN_HEADER_HEIGHT + 145}
-        >
-          {showAIPanel ? (
-            <RightResizableSidebar
-              id="ai-chat-panel"
-              initialWidth={400}
-              enable={false}
-              minWidth={400}
-              maxWidth={400}
-              topOffset={0}
-              height="100%"
-            >
-              {renderAIPanel}
-            </RightResizableSidebar>
-          ) : (
-            !editMode && (
-              <CollapsedRightRail onClick={() => setShowAIPanel(true)}>
-                <div
-                  css={css`
+      {aiEnabled && (
+        <RightPanelSpacer width={32}>
+          <RightPanelFixed
+            width={showAIPanel ? 400 : 32}
+            topOffset={MAIN_HEADER_HEIGHT + 145}
+          >
+            {showAIPanel ? (
+              <RightResizableSidebar
+                id="ai-chat-panel"
+                initialWidth={400}
+                enable={false}
+                minWidth={400}
+                maxWidth={400}
+                topOffset={0}
+                height="100%"
+              >
+                {renderAIPanel}
+              </RightResizableSidebar>
+            ) : (
+              !editMode && (
+                <CollapsedRightRail onClick={() => setShowAIPanel(true)}>
+                  <div
+                    css={css`
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     padding-top: ${theme.sizeUnit * 3}px;
                   `}
-                >
-                  <Icons.VerticalAlignTopOutlined
-                    iconSize="l"
-                    css={css`
+                  >
+                    <Icons.VerticalAlignTopOutlined
+                      iconSize="l"
+                      css={css`
                       color: ${theme.colorPrimary};
                       margin-bottom: ${theme.sizeUnit * 3}px;
                       transform: rotate(-90deg);
                     `}
-                  />
-                  <Icons.CommentOutlined
-                    iconSize="l"
-                    css={css`
+                    />
+                    <Icons.CommentOutlined
+                      iconSize="l"
+                      css={css`
                       color: ${theme.colorTextTertiary};
                     `}
-                  />
-                  <span
-                    css={css`
+                    />
+                    <span
+                      css={css`
                       writing-mode: vertical-rl;
                       text-orientation: mixed;
                       color: ${theme.colorPrimary};
@@ -807,15 +818,16 @@ flex: 1;
                       font-weight: ${theme.typography?.weights?.bold ?? 'bold'};
                       transform: rotate(180deg);
                     `}
-                  >
-                    {t('AI-Powered Insights')}
-                  </span>
-                </div>
-              </CollapsedRightRail>
-            )
-          )}
-        </RightPanelFixed>
-      </RightPanelSpacer>
+                    >
+                      {t('AI-Powered Insights')}
+                    </span>
+                  </div>
+                </CollapsedRightRail>
+              )
+            )}
+          </RightPanelFixed>
+        </RightPanelSpacer>
+      )}
 
       {dashboardIsSaving && (
         <Loading

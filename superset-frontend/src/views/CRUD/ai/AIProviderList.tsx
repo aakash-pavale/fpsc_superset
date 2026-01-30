@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { t } from '@apache-superset/core';
 import { styled } from '@apache-superset/core/ui';
 import { SupersetClient } from '@superset-ui/core';
@@ -8,7 +8,7 @@ import { ListView, ListViewFilterOperator } from 'src/components';
 import { useToasts } from 'src/components/MessageToasts/withToasts';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { Tooltip } from '@superset-ui/core/components';
-import { Modal } from 'antd';
+import { Modal, Switch } from 'antd';
 import dayjs from 'dayjs';
 import AIProviderModal from './AIProviderModal';
 
@@ -41,6 +41,40 @@ function AIProviderList() {
 
   const [providerModalOpen, setProviderModalOpen] = useState(false);
   const [currentProvider, setCurrentProvider] = useState<any>(null);
+  const [aiEnabled, setAiEnabled] = useState(true);
+
+  // Fetch AI Config
+  useEffect(() => {
+    SupersetClient.get({ endpoint: '/api/v1/ai_chat/config' })
+      .then(({ json }) => {
+        setAiEnabled(json.result.enabled ?? true);
+      })
+      .catch(() => {
+        // Default to true if fetch fails or config missing
+        setAiEnabled(true);
+      });
+  }, []);
+
+  const handleToggleAi = useCallback((checked: boolean) => {
+    setAiEnabled(checked);
+    SupersetClient.post({
+      endpoint: '/api/v1/ai_chat/config',
+      jsonPayload: { enabled: checked },
+    }).then(() => {
+      addSuccessToast(t('AI Assistant %s', checked ? 'Enabled' : 'Disabled'));
+    }).catch(async (e) => {
+      let errorMsg = t('Failed to update config');
+      try {
+        const response = await e?.response?.json();
+        if (response?.message) errorMsg += `: ${response.message}`;
+        else if (e?.statusText) errorMsg += `: ${e.statusText}`;
+      } catch (parseError) {
+        // Fallback to generic message
+      }
+      addDangerToast(errorMsg);
+      setAiEnabled(!checked); // Revert on error
+    });
+  }, [addSuccessToast, addDangerToast]);
 
   const handleEdit = (provider: any) => {
     setCurrentProvider(provider);
@@ -168,6 +202,12 @@ function AIProviderList() {
     <>
       <SubMenu
         name={t('AI Providers')}
+        additionalActions={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontWeight: 'bold' }}>{t('AI Assistant')}</span>
+            <Switch checked={aiEnabled} onChange={handleToggleAi} />
+          </div>
+        }
         buttons={[
           {
             name: t('Provider'),
