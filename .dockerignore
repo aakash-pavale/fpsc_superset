@@ -43,6 +43,7 @@ superset-frontend/cypress-base/
 superset-frontend/coverage/
 superset-frontend/.temp_cache/
 superset/static/assets/
+!superset/static/assets/images/fps_analytics
 superset-websocket/dist/
 venv
 .venv

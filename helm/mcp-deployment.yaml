@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superset-mcp
+  namespace: superset
+spec:
+  replicas: 2 # Redundant for HA
+  selector:
+    matchLabels:
+      app: superset-mcp
+  template:
+    metadata:
+      labels:
+        app: superset-mcp
+    spec:
+      containers:
+      - name: mcp
+        image: <acr-name>.azurecr.io/fpsc-superset:latest
+        command: ["superset", "mcp", "run", "--host", "0.0.0.0", "--port", "5008"]
+        ports:
+        - containerPort: 5008
+        envFrom:
+        - secretRef:
+            name: superset-env-secrets
+        env:
+        - name: SUPERSET_CONFIG_PATH
+          value: /app/pythonpath/superset_config_azure.py
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: superset-mcp
+  namespace: superset
+spec:
+  selector:
+    app: superset-mcp
+  ports:
+  - protocol: TCP
+    port: 5008
+    targetPort: 5008
+  type: ClusterIP

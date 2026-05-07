@@ -1,0 +1,286 @@
+# azure-values.yaml
+# RESOURCE OPTIMIZED VERSION: Fitting into available cluster memory
+
+image:
+  repository: "fpscsupersetacr.azurecr.io/fpsc-superset"
+  tag: "latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: acr-secret
+
+envFromSecrets:
+  - superset-env-secrets
+
+extraEnv:
+  PYTHONPATH: /app/pythonpath:/usr/local/lib/python3.10/site-packages
+
+postgresql:
+  enabled: false
+redis:
+  enabled: false
+
+bootstrapScript: |
+  #!/bin/bash
+  echo "Applying PHYSICAL FPS Analytics Branding..."
+
+  # 1. Force Logo and Favicon
+  cp /app/superset/static/assets/images/fps_analytics/logo.png /app/superset/static/assets/images/logo.png
+  cp /app/superset/static/assets/images/fps_analytics/favicon/favicon.png /app/superset/static/assets/images/favicon.png
+
+  # 2. Physical CSS Injection into main HTML files
+  BRANDING_STYLE='<style id="fps-hard-branding">:root { --primary-color: #101F5B !important; --secondary-color: #FF6E13 !important; --antd-primary-color: #101F5B !important; } .navbar, .navbar-inverse, .ant-layout-header { background-color: #101F5B !important; border-bottom: 2px solid #FF6E13 !important; } .navbar-brand img, .ant-layout-header img { width: 250px !important; height: auto !important; max-height: 50px !important; } .btn-primary, .ant-btn-primary { background-color: #101F5B !important; border-color: #101F5B !important; } .ant-tabs-ink-bar, .ant-menu-item-selected::after { background-color: #101F5B !important; }</style>'
+
+  find /app/superset/static/assets -name "*.html" -exec sed -i "s|</head>|${BRANDING_STYLE}</head>|g" {} +
+
+  # 3. Deep Color Swap (Teal -> FPS Blue)
+  # This targets the main teal and several common variations across the ENTIRE app
+  echo "Expanding color swap to entire /app directory..."
+  find /app -type f \( -name "*.css" -o -name "*.js" \) -exec sed -i 's/#20a7c9/#101F5B/g' {} +
+  find /app -type f \( -name "*.css" -o -name "*.js" \) -exec sed -i 's/#1fa8c9/#101F5B/g' {} +
+  find /app -type f \( -name "*.css" -o -name "*.js" \) -exec sed -i 's/#e6f7ff/#ffede3/g' {} +
+  find /app -type f \( -name "*.css" -o -name "*.js" \) -exec sed -i 's/#007a99/#0a1236/g' {} +
+
+  # 4. Force Loading GIF
+  cp /app/superset/static/assets/images/fps_analytics/loading/loading.gif /app/superset/static/assets/images/loading.gif
+  cp /app/superset/static/assets/images/fps_analytics/logo.png /app/superset/static/assets/images/superset-logo-horiz.png
+  cp /app/superset/static/assets/images/fps_analytics/favicon/favicon.png /app/superset/static/assets/images/favicon.png
+  cp /app/superset/static/assets/images/fps_analytics/favicon/favicon.png /app/superset/static/favicon.ico
+
+  if [ ! -f ~/bootstrap ]; then echo "Running Superset..." > ~/bootstrap; fi
+
+supersetNode:
+  replicas:
+    enabled: true
+    # Reduced to 1 to avoid "Insufficient memory" deadlock
+    replicaCount: 1
+  connections:
+    db_type: "postgresql"
+  initContainers: []
+
+supersetWorker:
+  replicaCount: 1
+  initContainers: []
+
+supersetCeleryBeat:
+  enabled: true
+  initContainers: []
+
+init:
+  enabled: true
+  initContainers: []
+
+ingress:
+  enabled: true
+  ingressClassName: azure-application-gateway
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+  path: /
+  pathType: ImplementationSpecific
+  hosts:
+    - dashboards.firstprofessional.net
+  tls:
+    - secretName: superset-tls
+      hosts:
+        - dashboards.firstprofessional.net
+
+configOverrides:
+  # This will be appended to the default superset_config.py
+  custom_config: |
+    import os
+    from flask_appbuilder.security.manager import AUTH_DB, AUTH_OAUTH
+
+    # --- 1. BRANDING & THEMING (Official) ---
+    APP_NAME = "FPSC Analytics"
+    APP_ICON = "/static/assets/images/fps_analytics/logo.png"
+    APP_ICON_WIDTH = 200
+    FAVICON_PATH = "/static/assets/images/fps_analytics/favicon/favicon.png"
+    LOGO_TOOLTIP = "FPSC Analytics"
+    LOGO_RIGHT_TEXT = "Analytics"
+
+    # Strict Theme Colors
+    PRIMARY_COLOR = '#101F5B'
+    SECONDARY_COLOR = '#FF6E13'
+    SUCCESS_COLOR = '#2E7D32'
+    WARNING_COLOR = '#F9A825'
+    ERROR_COLOR = '#C62828'
+
+    THEME_OVERRIDES = {
+        "colors": {
+            "primary": {"base": PRIMARY_COLOR},
+            "secondary": {"base": SECONDARY_COLOR},
+            "success": {"base": SUCCESS_COLOR},
+            "warning": {"base": WARNING_COLOR},
+            "error": {"base": ERROR_COLOR},
+        }
+    }
+
+    EXTRA_CATEGORICAL_COLOR_SCHEMES = [
+        {
+            "id": "fps_primary_01_colors",
+            "label": "FPS Primary 01 Color palette",
+            "colors": ["#dcedff", "#b1c0f5", "#6a7fc0", "#14a5ff", "#1457ff", "#013099", "#14167b", "#101f5b", "#011033", "#000919"]
+        },
+        {
+            "id": "fps_primary_02_colors",
+            "label": "FPS Primary 02 Color palette",
+            "colors": ["#ffffff", "#e6e6e6", "#b8bfcc", "#828a99", "#6d7480", "#575d66", "#4e5259", "#43464d", "#373a40", "#2c2e33", "#212326", "#16171a"]
+        },
+        {
+            "id": "fps_secondary_colors",
+            "label": "FPS Secondary Color palette",
+            "colors": ["#ff7c2b", "#ff6e13", "#e36111", "#a1450c"]
+        }
+    ]
+
+    EXTRA_CSS = """
+        :root {
+            --primary-color: #101F5B !important;
+            --secondary-color: #FF6E13 !important;
+            --antd-primary-color: #101F5B !important;
+        }
+        .ant-layout-header, .navbar, .navbar-inverse {
+            background-color: #101F5B !important;
+            border-bottom: 2px solid #FF6E13 !important;
+        }
+        .btn-primary, .ant-btn-primary, a[href*="login/azure"] {
+            background-color: #101F5B !important;
+            border-color: #101F5B !important;
+        }
+    """
+
+    # --- 2. SECURITY & AUTHENTICATION ---
+    from superset.security import SupersetSecurityManager
+    class CustomSecurityManager(SupersetSecurityManager):
+        def oauth_user_info(self, provider, response=None):
+            if provider == 'azure':
+                res = self.appbuilder.sm.oauth_remotes[provider].get('https://graph.microsoft.com/v1.0/me')
+                me = res.json()
+                return {
+                    'name': me.get('displayName'),
+                    'email': me.get('mail') or me.get('userPrincipalName'),
+                    'id': me.get('id'),
+                    'username': me.get('mail') or me.get('userPrincipalName'),
+                    'first_name': me.get('givenName'),
+                    'last_name': me.get('surname'),
+                }
+            return super().oauth_user_info(provider, response)
+
+    CUSTOM_SECURITY_MANAGER = CustomSecurityManager
+    AUTH_TYPE = AUTH_OAUTH
+    AUTH_USER_REGISTRATION = True
+    AUTH_USER_REGISTRATION_ROLE = "Admin"
+    AUTH_ROLES_SYNC_AT_LOGIN = True
+
+    SECRET_KEY = 'fpsc_production_secret_key_fixed_123'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_NAME = 'superset_production_session'
+
+    # --- 3. NETWORKING & CACHING ---
+    ENABLE_PROXY_FIX = True
+    WEB_EXTERNAL_URL = "https://dashboards.firstprofessional.net"
+    OVERWRITE_REDIRECT_URI = "https://dashboards.firstprofessional.net/oauth-authorized/azure"
+
+    import redis
+    REDIS_HOST = "fpsc-superset-redis.redis.cache.windows.net"
+    REDIS_PORT = 6380
+    REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", "PLACEHOLDER")
+    SESSION_TYPE = "redis"
+    SESSION_REDIS = redis.from_url(f"rediss://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0")
+
+    CACHE_CONFIG = {
+        'CACHE_TYPE': 'RedisCache',
+        'CACHE_DEFAULT_TIMEOUT': 86400,
+        'CACHE_KEY_PREFIX': 'superset_results',
+        'CACHE_REDIS_URL': f'rediss://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
+    }
+    DATA_CACHE_CONFIG = CACHE_CONFIG
+
+    # Azure OIDC Discovery
+    AZURE_TENANT_ID = os.environ.get("AZURE_TENANT_ID")
+    OAUTH_PROVIDERS = [{
+        'name': 'azure', 'icon': 'fa-windows', 'token_key': 'access_token',
+        'remote_app': {
+            'client_id': os.environ.get("AZURE_CLIENT_ID"),
+            'client_secret': os.environ.get("AZURE_CLIENT_SECRET"),
+            'server_metadata_url': f'https://login.microsoftonline.com/{AZURE_TENANT_ID}/v2.0/.well-known/openid-configuration',
+            'client_kwargs': {'scope': 'openid email profile User.Read'}
+        }
+    }]
+
+    FEATURE_FLAGS = {"EMBEDDED_SUPERSET": True, "DISABLE_EMBEDDED_SUPERSET_LOGOUT": True}
+
+    # --- 4. IN-MEMORY BRANDING INJECTION (Strict Brand Enforcement) ---
+    def FLASK_APP_MUTATOR(app):
+        @app.after_request
+        def force_branding(response):
+            if response.mimetype == 'text/html' and response.status_code == 200:
+                branding = b"""
+                <style id="fps-branding">
+                    :root {
+                        --primary-color: #101F5B !important;
+                        --secondary-color: #FF6E13 !important;
+                        --success-color: #2E7D32 !important;
+                        --warning-color: #F9A825 !important;
+                        --error-color: #C62828 !important;
+                        --antd-primary-color: #101F5B !important;
+                    }
+                    /* Fix Tab Underlines & Active States */
+                    .ant-tabs-ink-bar, .ant-menu-item-selected::after, .ant-tabs-tab-active {
+                        background-color: #101F5B !important;
+                        color: #101F5B !important;
+                    }
+                    /* Fix Buttons & Search Bars */
+                    .btn-primary, .ant-btn-primary, a[href*="login/azure"], .ant-btn-primary:active {
+                        background-color: #101F5B !important;
+                        border-color: #101F5B !important;
+                        color: #ffffff !important;
+                    }
+                    .btn-primary:hover, .ant-btn-primary:hover, a[href*="login/azure"]:hover {
+                        background-color: #FF6E13 !important;
+                        border-color: #FF6E13 !important;
+                    }
+                    /* Header Branding & Compact Balanced Logo */
+                    .navbar, .navbar-inverse, .ant-layout-header {
+                        background-color: #101F5B !important;
+                        border-bottom: 2px solid #FF6E13 !important;
+                        height: 50px !important;
+                        line-height: 50px !important;
+                    }
+                    /* Precise logo targeting for compact header */
+                    a[href="/"] img {
+                        width: 100px !important;
+                        height: auto !important;
+                        max-height: 30px !important;
+                        margin-top: 0 !important;
+                    }
+                    a[href="/"] {
+                        display: flex !important;
+                        align-items: center !important;
+                        height: 50px !important;
+                        margin-right: 20px !important;
+                    }
+                    /* Loading GIF Override (Standard) */
+                    .loading-img {
+                        background-image: url("/static/assets/images/fps_analytics/loading/loading.gif") !important;
+                        background-size: contain !important;
+                        background-repeat: no-repeat !important;
+                        background-position: center !important;
+                    }
+                </style>
+                """
+                if b'</head>' in response.data:
+                    response.data = response.data.replace(b'</head>', branding + b'</head>')
+            return response
+        return app
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi # Lowered from 2Gi to fit on nodes
+  limits:
+    cpu: 1000m
+    memory: 4Gi

@@ -1,0 +1,18 @@
+# Use the official Superset image as base
+FROM apache/superset:latest
+
+USER root
+
+# Install Azure-specific requirements and database drivers
+RUN pip install Authlib azure-storage-blob psycopg2-binary redis
+
+# Copy the Azure configuration
+COPY docker/pythonpath_dev/superset_config_azure.py /app/pythonpath/superset_config_azure.py
+
+# Copy branding assets
+COPY superset/static/assets/images/fps_analytics /app/superset/static/assets/images/fps_analytics
+
+# Ensure permissions are correct
+RUN chown -R superset:superset /app/superset /app/pythonpath
+
+USER superset
